@@ -1,0 +1,594 @@
+--- courts ---
+CREATE TABLE courts (
+	court_name VARCHAR(255) NOT NULL, 
+	court_type VARCHAR(100) NOT NULL, 
+	jurisdiction VARCHAR(255), 
+	address VARCHAR(500), 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+--- users ---
+CREATE TABLE users (
+	role VARCHAR(20) NOT NULL, 
+	status VARCHAR(30) DEFAULT 'PENDING_VERIFICATION' NOT NULL, 
+	password_hash VARCHAR(255) NOT NULL, 
+	last_login_at DATETIME, 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+--- ix_users_status ---
+CREATE INDEX ix_users_status ON users (status)
+
+--- ix_users_role ---
+CREATE INDEX ix_users_role ON users (role)
+
+--- nfc_cards ---
+CREATE TABLE nfc_cards (
+	lawyer_id CHAR(32) NOT NULL, 
+	token_hash VARCHAR(128) NOT NULL, 
+	status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL, 
+	issued_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	revoked_at DATETIME, 
+	last_used_at DATETIME, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(lawyer_id) REFERENCES users (id) ON DELETE RESTRICT, 
+	UNIQUE (token_hash)
+)
+
+--- ix_nfc_cards_token_hash ---
+CREATE UNIQUE INDEX ix_nfc_cards_token_hash ON nfc_cards (token_hash)
+
+--- ix_nfc_cards_lawyer_id ---
+CREATE INDEX ix_nfc_cards_lawyer_id ON nfc_cards (lawyer_id)
+
+--- registered_devices ---
+CREATE TABLE registered_devices (
+	user_id CHAR(32) NOT NULL, 
+	device_label VARCHAR(255) NOT NULL, 
+	status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	last_used_at DATETIME, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+)
+
+--- ix_registered_devices_user_id ---
+CREATE INDEX ix_registered_devices_user_id ON registered_devices (user_id)
+
+--- cases ---
+CREATE TABLE cases (
+	csr_number VARCHAR(50) NOT NULL, 
+	fir_number VARCHAR(100), 
+	case_type VARCHAR(100) NOT NULL, 
+	offence_category VARCHAR(200), 
+	cognizable_status VARCHAR(20), 
+	incident_date DATE, 
+	incident_time TIME, 
+	incident_location TEXT, 
+	case_status VARCHAR(30) DEFAULT 'REGISTERED' NOT NULL, 
+	procedural_stage VARCHAR(100), 
+	created_by CHAR(32) NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (csr_number), 
+	FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_cases_csr_number ---
+CREATE UNIQUE INDEX ix_cases_csr_number ON cases (csr_number)
+
+--- ix_cases_fir_number ---
+CREATE INDEX ix_cases_fir_number ON cases (fir_number)
+
+--- ix_cases_case_status ---
+CREATE INDEX ix_cases_case_status ON cases (case_status)
+
+--- ix_cases_created_by ---
+CREATE INDEX ix_cases_created_by ON cases (created_by)
+
+--- court_agendas ---
+CREATE TABLE court_agendas (
+	court_id CHAR(32) NOT NULL, 
+	agenda_date DATE NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(court_id) REFERENCES courts (id) ON DELETE RESTRICT
+)
+
+--- ix_court_agendas_court_date ---
+CREATE UNIQUE INDEX ix_court_agendas_court_date ON court_agendas (court_id, agenda_date)
+
+--- police_profiles ---
+CREATE TABLE police_profiles (
+	user_id CHAR(32) NOT NULL, 
+	station_code VARCHAR(50) NOT NULL, 
+	officer_name VARCHAR(255) NOT NULL, 
+	station_name VARCHAR(255) NOT NULL, 
+	jurisdiction VARCHAR(255), 
+	verification_status VARCHAR(20) DEFAULT 'UNVERIFIED' NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (user_id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	UNIQUE (station_code)
+)
+
+--- ix_police_profiles_station_code ---
+CREATE UNIQUE INDEX ix_police_profiles_station_code ON police_profiles (station_code)
+
+--- lawyer_profiles ---
+CREATE TABLE lawyer_profiles (
+	user_id CHAR(32) NOT NULL, 
+	full_name VARCHAR(255) NOT NULL, 
+	bar_registration_id VARCHAR(100) NOT NULL, 
+	verification_status VARCHAR(20) DEFAULT 'UNVERIFIED' NOT NULL, 
+	phone VARCHAR(20), 
+	address VARCHAR(500), 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (user_id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	UNIQUE (bar_registration_id)
+)
+
+--- ix_lawyer_profiles_bar_registration_id ---
+CREATE UNIQUE INDEX ix_lawyer_profiles_bar_registration_id ON lawyer_profiles (bar_registration_id)
+
+--- court_authority_profiles ---
+CREATE TABLE court_authority_profiles (
+	user_id CHAR(32) NOT NULL, 
+	full_name VARCHAR(255) NOT NULL, 
+	jo_code VARCHAR(50) NOT NULL, 
+	court_id CHAR(32), 
+	verification_status VARCHAR(20) DEFAULT 'UNVERIFIED' NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (user_id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	UNIQUE (jo_code), 
+	FOREIGN KEY(court_id) REFERENCES courts (id) ON DELETE SET NULL
+)
+
+--- ix_court_authority_profiles_jo_code ---
+CREATE UNIQUE INDEX ix_court_authority_profiles_jo_code ON court_authority_profiles (jo_code)
+
+--- ai_jobs ---
+CREATE TABLE ai_jobs (
+	case_id CHAR(32), 
+	job_type VARCHAR(100) NOT NULL, 
+	status VARCHAR(20) DEFAULT 'PENDING' NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	completed_at DATETIME, 
+	error_message TEXT, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE SET NULL
+)
+
+--- ix_ai_jobs_status ---
+CREATE INDEX ix_ai_jobs_status ON ai_jobs (status)
+
+--- ix_ai_jobs_case_id ---
+CREATE INDEX ix_ai_jobs_case_id ON ai_jobs (case_id)
+
+--- audit_logs ---
+CREATE TABLE audit_logs (
+	case_id CHAR(32), 
+	actor_user_id CHAR(32) NOT NULL, 
+	actor_role VARCHAR(20) NOT NULL, 
+	action VARCHAR(50) NOT NULL, 
+	entity_type VARCHAR(50) NOT NULL, 
+	entity_id CHAR(32) NOT NULL, 
+	old_state JSON, 
+	new_state JSON, 
+	timestamp DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	request_metadata JSON, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE SET NULL, 
+	FOREIGN KEY(actor_user_id) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_audit_logs_case_id ---
+CREATE INDEX ix_audit_logs_case_id ON audit_logs (case_id)
+
+--- ix_audit_logs_timestamp ---
+CREATE INDEX ix_audit_logs_timestamp ON audit_logs (timestamp)
+
+--- ix_audit_logs_actor_user_id ---
+CREATE INDEX ix_audit_logs_actor_user_id ON audit_logs (actor_user_id)
+
+--- ix_audit_logs_entity_type_entity_id ---
+CREATE INDEX ix_audit_logs_entity_type_entity_id ON audit_logs (entity_type, entity_id)
+
+--- ix_audit_logs_action ---
+CREATE INDEX ix_audit_logs_action ON audit_logs (action)
+
+--- webauthn_credentials ---
+CREATE TABLE webauthn_credentials (
+	user_id CHAR(32) NOT NULL, 
+	device_id CHAR(32), 
+	credential_id VARCHAR(500) NOT NULL, 
+	public_key BLOB NOT NULL, 
+	sign_count INTEGER DEFAULT '0' NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	last_used_at DATETIME, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
+	FOREIGN KEY(device_id) REFERENCES registered_devices (id) ON DELETE SET NULL, 
+	UNIQUE (credential_id)
+)
+
+--- ix_webauthn_credentials_user_id ---
+CREATE INDEX ix_webauthn_credentials_user_id ON webauthn_credentials (user_id)
+
+--- ix_webauthn_credentials_credential_id ---
+CREATE UNIQUE INDEX ix_webauthn_credentials_credential_id ON webauthn_credentials (credential_id)
+
+--- case_qr_tokens ---
+CREATE TABLE case_qr_tokens (
+	case_id CHAR(32) NOT NULL, 
+	token_hash VARCHAR(128) NOT NULL, 
+	status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	revoked_at DATETIME, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	UNIQUE (token_hash)
+)
+
+--- ix_case_qr_tokens_token_hash ---
+CREATE UNIQUE INDEX ix_case_qr_tokens_token_hash ON case_qr_tokens (token_hash)
+
+--- ix_case_qr_tokens_case_id ---
+CREATE INDEX ix_case_qr_tokens_case_id ON case_qr_tokens (case_id)
+
+--- parties ---
+CREATE TABLE parties (
+	case_id CHAR(32) NOT NULL, 
+	party_type VARCHAR(20) NOT NULL, 
+	full_name VARCHAR(255) NOT NULL, 
+	gender VARCHAR(20), 
+	age INTEGER, 
+	address TEXT, 
+	contact_number VARCHAR(20), 
+	id_type VARCHAR(50), 
+	id_number VARCHAR(100), 
+	created_at DATE DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT
+)
+
+--- ix_parties_case_id ---
+CREATE INDEX ix_parties_case_id ON parties (case_id)
+
+--- ix_parties_party_type ---
+CREATE INDEX ix_parties_party_type ON parties (party_type)
+
+--- documents ---
+CREATE TABLE documents (
+	case_id CHAR(32) NOT NULL, 
+	document_type VARCHAR(100) NOT NULL, 
+	storage_key VARCHAR(500) NOT NULL, 
+	original_filename VARCHAR(255) NOT NULL, 
+	safe_filename VARCHAR(255) NOT NULL, 
+	mime_type VARCHAR(100) NOT NULL, 
+	file_size BIGINT NOT NULL, 
+	sha256_hash VARCHAR(64) NOT NULL, 
+	uploaded_by CHAR(32) NOT NULL, 
+	uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	processing_status VARCHAR(20) DEFAULT 'PENDING' NOT NULL, 
+	verification_status VARCHAR(20) DEFAULT 'UNVERIFIED' NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(uploaded_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_documents_uploaded_by ---
+CREATE INDEX ix_documents_uploaded_by ON documents (uploaded_by)
+
+--- ix_documents_processing_status ---
+CREATE INDEX ix_documents_processing_status ON documents (processing_status)
+
+--- ix_documents_case_id ---
+CREATE INDEX ix_documents_case_id ON documents (case_id)
+
+--- hearings ---
+CREATE TABLE hearings (
+	case_id CHAR(32) NOT NULL, 
+	court_id CHAR(32) NOT NULL, 
+	judge_name VARCHAR(255) NOT NULL, 
+	hearing_date DATE NOT NULL, 
+	hearing_time TIME, 
+	status VARCHAR(20) DEFAULT 'SCHEDULED' NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	confirmed_by CHAR(32), 
+	confirmed_at DATETIME, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(court_id) REFERENCES courts (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(confirmed_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_hearings_court_id ---
+CREATE INDEX ix_hearings_court_id ON hearings (court_id)
+
+--- ix_hearings_hearing_date ---
+CREATE INDEX ix_hearings_hearing_date ON hearings (hearing_date)
+
+--- ix_hearings_status ---
+CREATE INDEX ix_hearings_status ON hearings (status)
+
+--- ix_hearings_case_id ---
+CREATE INDEX ix_hearings_case_id ON hearings (case_id)
+
+--- investigations ---
+CREATE TABLE investigations (
+	case_id CHAR(32) NOT NULL, 
+	created_by CHAR(32) NOT NULL, 
+	note TEXT NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_investigations_case_id ---
+CREATE INDEX ix_investigations_case_id ON investigations (case_id)
+
+--- withdrawal_requests ---
+CREATE TABLE withdrawal_requests (
+	case_id CHAR(32) NOT NULL, 
+	submitted_by CHAR(32) NOT NULL, 
+	reason TEXT NOT NULL, 
+	status VARCHAR(30) DEFAULT 'PENDING_REVIEW' NOT NULL, 
+	ai_summary TEXT, 
+	reviewed_by CHAR(32), 
+	reviewed_at DATETIME, 
+	decision_note TEXT, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(submitted_by) REFERENCES users (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(reviewed_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_withdrawal_requests_case_id ---
+CREATE INDEX ix_withdrawal_requests_case_id ON withdrawal_requests (case_id)
+
+--- ix_withdrawal_requests_status ---
+CREATE INDEX ix_withdrawal_requests_status ON withdrawal_requests (status)
+
+--- ai_outputs ---
+CREATE TABLE ai_outputs (
+	ai_job_id CHAR(32) NOT NULL, 
+	output_type VARCHAR(100) NOT NULL, 
+	content TEXT NOT NULL, 
+	model_metadata JSON, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	verified_by CHAR(32), 
+	verified_at DATETIME, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(ai_job_id) REFERENCES ai_jobs (id) ON DELETE CASCADE, 
+	FOREIGN KEY(verified_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_ai_outputs_ai_job_id ---
+CREATE INDEX ix_ai_outputs_ai_job_id ON ai_outputs (ai_job_id)
+
+--- attendance_records ---
+CREATE TABLE attendance_records (
+	hearing_id CHAR(32) NOT NULL, 
+	party_id CHAR(32) NOT NULL, 
+	recorded_by_lawyer_id CHAR(32) NOT NULL, 
+	attendance_status VARCHAR(10) NOT NULL, 
+	recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(hearing_id) REFERENCES hearings (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(party_id) REFERENCES parties (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(recorded_by_lawyer_id) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_attendance_records_hearing_id ---
+CREATE INDEX ix_attendance_records_hearing_id ON attendance_records (hearing_id)
+
+--- absence_requests ---
+CREATE TABLE absence_requests (
+	case_id CHAR(32) NOT NULL, 
+	hearing_id CHAR(32) NOT NULL, 
+	party_id CHAR(32) NOT NULL, 
+	submitted_by_lawyer_id CHAR(32) NOT NULL, 
+	reason TEXT NOT NULL, 
+	status VARCHAR(30) DEFAULT 'PENDING_REVIEW' NOT NULL, 
+	ai_summary TEXT, 
+	reviewed_by CHAR(32), 
+	reviewed_at DATETIME, 
+	decision_note TEXT, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(hearing_id) REFERENCES hearings (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(party_id) REFERENCES parties (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(submitted_by_lawyer_id) REFERENCES users (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(reviewed_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_absence_requests_case_id ---
+CREATE INDEX ix_absence_requests_case_id ON absence_requests (case_id)
+
+--- ix_absence_requests_hearing_id ---
+CREATE INDEX ix_absence_requests_hearing_id ON absence_requests (hearing_id)
+
+--- ix_absence_requests_status ---
+CREATE INDEX ix_absence_requests_status ON absence_requests (status)
+
+--- agenda_items ---
+CREATE TABLE agenda_items (
+	agenda_id CHAR(32) NOT NULL, 
+	hearing_id CHAR(32) NOT NULL, 
+	ai_proposed_order INTEGER, 
+	final_order INTEGER, 
+	notes TEXT, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(agenda_id) REFERENCES court_agendas (id) ON DELETE CASCADE, 
+	FOREIGN KEY(hearing_id) REFERENCES hearings (id) ON DELETE RESTRICT
+)
+
+--- ix_agenda_items_agenda_id ---
+CREATE INDEX ix_agenda_items_agenda_id ON agenda_items (agenda_id)
+
+--- proceedings ---
+CREATE TABLE proceedings (
+	case_id CHAR(32) NOT NULL, 
+	hearing_id CHAR(32) NOT NULL, 
+	text TEXT NOT NULL, 
+	source VARCHAR(20) NOT NULL, 
+	verified_by CHAR(32), 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(hearing_id) REFERENCES hearings (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(verified_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_proceedings_case_id ---
+CREATE INDEX ix_proceedings_case_id ON proceedings (case_id)
+
+--- ix_proceedings_hearing_id ---
+CREATE INDEX ix_proceedings_hearing_id ON proceedings (hearing_id)
+
+--- schedule_decisions ---
+CREATE TABLE schedule_decisions (
+	hearing_id CHAR(32) NOT NULL, 
+	recommended_date DATE NOT NULL, 
+	recommended_time TIME, 
+	reasoning_factors TEXT NOT NULL, 
+	confirmed_by CHAR(32) NOT NULL, 
+	confirmed_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(hearing_id) REFERENCES hearings (id) ON DELETE CASCADE, 
+	FOREIGN KEY(confirmed_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_schedule_decisions_hearing_id ---
+CREATE INDEX ix_schedule_decisions_hearing_id ON schedule_decisions (hearing_id)
+
+--- evidence_records ---
+CREATE TABLE evidence_records (
+	case_id CHAR(32) NOT NULL, 
+	evidence_number VARCHAR(100) NOT NULL, 
+	category VARCHAR(100) NOT NULL, 
+	description TEXT, 
+	source VARCHAR(200), 
+	uploaded_by CHAR(32) NOT NULL, 
+	document_id CHAR(32), 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(uploaded_by) REFERENCES users (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE SET NULL
+)
+
+--- ix_evidence_records_case_id ---
+CREATE INDEX ix_evidence_records_case_id ON evidence_records (case_id)
+
+--- judgments ---
+CREATE TABLE judgments (
+	case_id CHAR(32) NOT NULL, 
+	document_id CHAR(32) NOT NULL, 
+	uploaded_by CHAR(32) NOT NULL, 
+	judgment_date DATE NOT NULL, 
+	metadata_json JSON, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(uploaded_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_judgments_case_id ---
+CREATE INDEX ix_judgments_case_id ON judgments (case_id)
+
+--- lawyer_assignments ---
+CREATE TABLE lawyer_assignments (
+	case_id CHAR(32) NOT NULL, 
+	party_id CHAR(32) NOT NULL, 
+	lawyer_id CHAR(32) NOT NULL, 
+	status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL, 
+	assigned_by CHAR(32) NOT NULL, 
+	assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	ended_at DATETIME, 
+	end_reason VARCHAR(255), 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(party_id) REFERENCES parties (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(lawyer_id) REFERENCES users (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(assigned_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_lawyer_assignments_case_id ---
+CREATE INDEX ix_lawyer_assignments_case_id ON lawyer_assignments (case_id)
+
+--- ix_lawyer_assignments_lawyer_id ---
+CREATE INDEX ix_lawyer_assignments_lawyer_id ON lawyer_assignments (lawyer_id)
+
+--- ix_lawyer_assignments_status ---
+CREATE INDEX ix_lawyer_assignments_status ON lawyer_assignments (status)
+
+--- representation_change_requests ---
+CREATE TABLE representation_change_requests (
+	case_id CHAR(32) NOT NULL, 
+	lawyer_assignment_id CHAR(32) NOT NULL, 
+	requested_by CHAR(32) NOT NULL, 
+	request_type VARCHAR(50) NOT NULL, 
+	reason TEXT NOT NULL, 
+	status VARCHAR(20) DEFAULT 'PENDING' NOT NULL, 
+	reviewed_by CHAR(32), 
+	reviewed_at DATETIME, 
+	created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, 
+	id CHAR(32) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(case_id) REFERENCES cases (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(lawyer_assignment_id) REFERENCES lawyer_assignments (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(requested_by) REFERENCES users (id) ON DELETE RESTRICT, 
+	FOREIGN KEY(reviewed_by) REFERENCES users (id) ON DELETE RESTRICT
+)
+
+--- ix_representation_change_requests_case_id ---
+CREATE INDEX ix_representation_change_requests_case_id ON representation_change_requests (case_id)
+

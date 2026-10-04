@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* CounselConnect palette mapped to shadcn/ui CSS variables */
+    /* Background: warm neutral #F7F6F3 → HSL 40 14% 96% */
+    --background: 40 14% 96%;
+    --foreground: 210 16% 14%;
+
+    /* Card / Surface: white */
+    --card: 0 0% 100%;
+    --card-foreground: 210 16% 14%;
+
+    /* Popover: white */
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 16% 14%;
+
+    /* Primary: terracotta #B85C3A → HSL 16 52% 47% */
+    --primary: 16 52% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: warm neutral */
+    --secondary: 30 8% 93%;
+    --secondary-foreground: 210 16% 14%;
+
+    /* Muted: light warm */
+    --muted: 30 8% 93%;
+    --muted-foreground: 219 9% 46%;
+
+    /* Accent: terracotta bg #F6E7E0 → HSL 18 55% 92% */
+    --accent: 18 55% 92%;
+    --accent-foreground: 16 52% 37%;
+
+    /* Destructive: error red */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border: warm gray #E4E1DC → HSL 30 12% 88% */
+    --border: 30 12% 88%;
+    --input: 30 12% 88%;
+    --ring: 16 52% 47%;
+
+    /* Border radius: 8px per project rules (6-10px range) */
+    --radius: 0.5rem;
+
+    /* Sidebar: light warm #FCFBF8 → HSL 40 40% 97% */
+    --sidebar-background: 40 40% 97%;
+    --sidebar-foreground: 210 16% 14%;
+    --sidebar-primary: 16 52% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 18 55% 92%;
+    --sidebar-accent-foreground: 16 52% 37%;
+    --sidebar-border: 30 12% 88%;
+    --sidebar-ring: 16 52% 47%;
+
+    /* Chart colors */
+    --chart-1: 16 52% 47%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 37 91% 55%;
+    --chart-4: 217 91% 60%;
+    --chart-5: 30 12% 55%;
+
+    /* CounselConnect-specific tokens (non-shadcn) */
+    --color-background: #F7F6F3;
+    --color-surface: #FFFFFF;
+    --color-sidebar: #FCFBF8;
+    --color-primary-text: #1F2428;
+    --color-secondary-text: #667085;
+    --color-border: #E4E1DC;
+    --color-terracotta: #B85C3A;
+    --color-terracotta-dark: #8E432B;
+    --color-terracotta-soft: #E8B49F;
+    --color-terracotta-bg: #F6E7E0;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100vh;
+  }
+
+  * {
+    @apply border-border;
+  }
+}
+
+@layer components {
+  /* Accessible focus ring - used on interactive elements */
+  .focus-ring {
+    @apply outline-none ring-2 ring-ring/40 ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar styling for sidebar and panels */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 3px;
+  }
+}

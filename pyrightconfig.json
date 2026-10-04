@@ -1,0 +1,7 @@
+{
+  "venvPath": "d:/counselconnect",
+  "venv": ".venv",
+  "extraPaths": [
+    "d:/counselconnect/apps/api"
+  ]
+}
